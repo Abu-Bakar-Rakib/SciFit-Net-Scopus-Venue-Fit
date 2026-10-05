@@ -295,34 +295,15 @@ Model weights are not included in this repository because of their size. Downloa
 
 ---
 
-## Citation
-
-```bibtex
-@misc{scifitnet2026,
-  title  = {SciFit-Net: Explainable Journal Recommendation with Scope-Mismatch Estimation},
-  author = {Rakib},
-  year   = {2026},
-  url    = {https://github.com/<your-username>/SciFit-Net}
-}
-```
-
----
-
 ## Acknowledgements
 
 SciBERT and SPECTER-2 (Allen Institute for AI), PyTorch, Hugging Face Transformers, and Streamlit.
 
 ---
 
-## License
-
-Add a license (for example MIT) before publishing.
-
----
-
 ## Author
 
-Rakib  
+Abu Bakar Rakib  
 Department of CSE, IUBAT
 
 ---
