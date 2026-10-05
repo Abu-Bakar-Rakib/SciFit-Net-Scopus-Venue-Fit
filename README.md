@@ -19,6 +19,9 @@ SciFit-Net evaluates a manuscript's title and abstract to deliver:
 - explainability outputs such as key concepts and similar papers with DOI references.
 
 ---
+<img width="709" height="600" alt="image" src="https://github.com/user-attachments/assets/5556eee2-a1a9-497d-9a78-bcc847571a56" />
+<img width="685" height="603" alt="image" src="https://github.com/user-attachments/assets/8950823b-f229-47ed-9bbb-cedacf6d3654" />
+<img width="675" height="623" alt="image" src="https://github.com/user-attachments/assets/61fd243d-7517-45ed-aae7-dd467a74e43d" />
 
 ## Why SciFit-Net?
 
