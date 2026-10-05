@@ -1,19 +1,43 @@
 # SciFit-Net
 
-**Explainable journal recommendation from a title and abstract, with scope-mismatch estimation and title–abstract consistency checking.**
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python" alt="Python 3.9+" />
+  <img src="https://img.shields.io/badge/PyTorch-2.x-EE4C2C?style=for-the-badge&logo=pytorch" alt="PyTorch" />
+  <img src="https://img.shields.io/badge/Transformers-4.x-FFD21E?style=for-the-badge&logo=huggingface" alt="Transformers" />
+  <img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?style=for-the-badge&logo=streamlit" alt="Streamlit" />
+</p>
 
-SciFit-Net takes a manuscript's title and abstract and returns:
+<p align="center">
+  <strong>Explainable journal recommendation from a title and abstract, with scope-mismatch estimation and title–abstract consistency checking.</strong>
+</p>
 
-1. a **title–abstract consistency** score,
-2. a ranked list of **recommended journals** with compatibility scores,
-3. a **scope-compatibility / scope-mismatch risk** assessment for the best venue,
-4. **explanations**: key concepts and similar papers with DOIs.
+SciFit-Net evaluates a manuscript's title and abstract to deliver:
+
+- a title–abstract consistency score,
+- a ranked list of recommended journals with compatibility scores,
+- a scope-compatibility and scope-mismatch risk assessment for the best venue,
+- explainability outputs such as key concepts and similar papers with DOI references.
 
 ---
 
-## Example output (real model output, test paper)
+## Why SciFit-Net?
 
-```
+Choosing the right journal is often a mix of semantic fit, topical relevance, and editorial scope. SciFit-Net models this process end-to-end using a dual-stream architecture that combines:
+
+- scientific language understanding from SciBERT,
+- citation-aware scientific embeddings from SPECTER-2,
+- multi-prototype venue modeling,
+- explainability for real-world decision support.
+
+This makes it suitable for authors, editorial teams, and research support workflows where transparency matters as much as accuracy.
+
+---
+
+## Example output
+
+Below is a real model output on a test paper:
+
+```text
 ╔══════════════════════════════════════════════════╗
 ║                SCIFIT-NET RESULT                 ║
 ╠══════════════════════════════════════════════════╣
@@ -39,20 +63,20 @@ SciFit-Net takes a manuscript's title and abstract and returns:
 ╚══════════════════════════════════════════════════╝
 
 EXPLAINABILITY
-  Key concepts : ants, potential, feeding, invasion, repeated, agent
+  Key concepts: ants, potential, feeding, invasion, repeated, agent
   Similar papers in best venue:
     - Biocontrol of home invading rubber litter beetle, Luprops tristis with weaver ants
     - Bioefficacy of coccinellid predators on major tea pests
     - Population and predatory potency of spiders in brinjal and snakegourd
 ```
 
-The true journal of this paper is *Journal of Biopesticides*, ranked first. Venue percentages are calibrated compatibility scores, so they do **not** sum to 100%.
+The true journal for this paper is *Journal of Biopesticides*, which appears ranked first. The venue percentages are calibrated compatibility scores and do not sum to 100%.
 
 ---
 
-## Architecture
+## Model architecture
 
-```
+```text
 Title + Abstract
       │
       ├── Stream A: Title encoder → Abstract encoder → Cross-attention   (SciBERT, fine-tuned)
@@ -72,34 +96,41 @@ Title + Abstract
 
 | Component | Description |
 |---|---|
-| Stream A | Shared SciBERT encodes title and abstract; bidirectional title↔abstract cross-attention; attention pooling |
-| Stream B | SPECTER-2 embedding of `title [SEP] abstract`, computed once and cached |
-| Gated fusion | Learned gate mixes both streams plus title–abstract alignment features |
-| Venue recommender | 3 learnable prototypes per journal; soft-max over prototype cosine similarities |
-| Scope-mismatch estimator | Paper–venue pair → mismatch probability and scope distance |
-| Consistency head | Predicts whether the title and abstract belong together |
+| Stream A | Shared SciBERT encodes the title and abstract; bidirectional title↔abstract cross-attention is applied, followed by attention pooling. |
+| Stream B | SPECTER-2 embedding of `title [SEP] abstract`, computed once and cached. |
+| Gated fusion | A learned gate mixes both streams and title–abstract alignment features. |
+| Venue recommender | Three learnable prototypes per journal; softmax over prototype cosine similarities. |
+| Scope-mismatch estimator | Maps a paper–venue pair to mismatch probability and scope distance. |
+| Consistency head | Predicts whether the title and abstract belong together. |
 
-The model has 121.1M parameters. Training uses multi-task loss (venue cross-entropy with label smoothing, consistency BCE, scope BCE, prototype-diversity regularizer) with mixed precision.
+The model contains approximately 121.1M parameters. Training uses a multi-task objective combining venue cross-entropy (with label smoothing), consistency BCE, scope BCE, and a prototype-diversity regularizer, using mixed precision.
 
 ---
 
 ## Dataset
 
-Scopus export of article metadata (`Scopus_unique_data.csv`): title, abstract, source title (journal), DOI and keywords.
+The training data is a Scopus export of article metadata stored in `Scopus_unique_data.csv`, including:
 
-Preprocessing:
-- Duplicate titles and abstracts removed.
-- Publisher copyright lines (for example "© 2024 Publisher") stripped from abstracts, because they leak the journal.
-- Journals with fewer than 10 papers dropped (closed-set recommendation).
-- Stratified 80/10/10 split per journal.
+- title,
+- abstract,
+- source title (journal),
+- DOI,
+- keywords.
 
-| | Count |
-|---|---|
+### Preprocessing
+
+- Duplicate titles and abstracts were removed.
+- Publisher copyright lines such as `© 2024 Publisher` were stripped from abstracts, because they leak the journal identity.
+- Journals with fewer than 10 papers were excluded from recommendation.
+- A stratified 80/10/10 split was applied per journal.
+
+| Item | Count |
+|---|---:|
 | Papers | 10,565 |
 | Venues | 213 |
 | Train / Val / Test | 8,457 / 1,054 / 1,054 |
 
-The dataset is not redistributed in this repository.
+> The dataset itself is not redistributed in this repository.
 
 ---
 
@@ -111,7 +142,19 @@ cd SciFit-Net
 pip install -r requirements.txt
 ```
 
-Requirements: Python 3.9+, PyTorch, Transformers, scikit-learn, SciPy, pandas, NumPy, tqdm, Streamlit. A GPU is recommended for training (developed and tested on a Kaggle T4, about 170 s per epoch).
+### Requirements
+
+- Python 3.9+
+- PyTorch
+- Transformers
+- scikit-learn
+- SciPy
+- pandas
+- NumPy
+- tqdm
+- Streamlit
+
+A GPU is strongly recommended for training. The project was developed and tested on a Kaggle T4, with approximately 170 seconds per epoch.
 
 ---
 
@@ -125,13 +168,20 @@ python scifit_net.py --mode all --csv /path/to/Scopus_unique_data.csv
 
 | Option | Meaning |
 |---|---|
-| `--epochs 8` | Number of epochs |
-| `--batch 16` | Batch size (use `8` or `--grad_ckpt` if out of memory) |
-| `--min_papers 10` | Minimum papers per journal |
-| `--n_proto 3` | Prototypes per journal |
+| `--epochs 8` | Number of training epochs |
+| `--batch 16` | Batch size (use `8` or `--grad_ckpt` if memory is limited) |
+| `--min_papers 10` | Minimum papers required per journal |
+| `--n_proto 3` | Prototypes generated per journal |
 | `--debug_n 1500 --epochs 1` | Quick smoke test |
 
-Outputs are written to `scifit_out/`: `best.pt`, `meta.json`, `index.npz`, `index_meta.json`, `venue_geometry.npz`, `test_results.json`.
+Outputs are saved in `scifit_out/`:
+
+- `best.pt`
+- `meta.json`
+- `index.npz`
+- `index_meta.json`
+- `venue_geometry.npz`
+- `test_results.json`
 
 ### Evaluate a saved model
 
@@ -145,22 +195,22 @@ python scifit_net.py --mode eval --csv /path/to/Scopus_unique_data.csv
 python scifit_net.py --mode predict --title "Your title" --abstract "Your abstract"
 ```
 
-### Web app
+### Launch the web app
 
 ```bash
 streamlit run app.py
 ```
 
-Set the model folder in the sidebar, or use the `SCIFIT_OUT` environment variable. The first prediction downloads SPECTER-2.
+Set the model folder in the sidebar, or define the `SCIFIT_OUT` environment variable. On the first prediction, the app will download SPECTER-2.
 
 ---
 
-## Results (test split, 1,054 papers)
+## Results on the test split (1,054 papers)
 
-### 1. Venue recommendation
+### 1) Venue recommendation
 
 | Metric | SciFit-Net | SPECTER-2 centroid | Frequency prior |
-|---|---|---|---|
+|---|---:|---:|---:|
 | Hit@1 | **0.2970** | 0.1423 | 0.0569 |
 | Hit@3 | **0.5000** | 0.2865 | 0.1338 |
 | Hit@5 | **0.6015** | 0.3776 | 0.1954 |
@@ -170,20 +220,20 @@ Set the model folder in the sidebar, or use the `SCIFIT_OUT` environment variabl
 | Macro-F1@1 | **0.1400** | 0.1198 | 0.0005 |
 | Median rank | **3.5** | 9.0 | 23.0 |
 
-SciFit-Net roughly doubles Hit@1 over the SPECTER-2 centroid baseline and is about 5× better than the frequency prior, across 213 fine-grained venues.
+SciFit-Net roughly doubles Hit@1 relative to the SPECTER-2 centroid baseline and is approximately 5× better than the frequency prior across 213 fine-grained venues.
 
-Performance by venue size (training papers per journal):
+#### Performance by venue size
 
 | Group | n (test) | Hit@1 | Hit@5 | MRR |
-|---|---|---|---|---|
+|---|---:|---:|---:|---:|
 | Head (≥ 50) | 691 | 0.3792 | 0.7004 | 0.5216 |
 | Mid (20–49) | 187 | 0.1872 | 0.5080 | 0.3428 |
 | Tail (< 20) | 176 | 0.0909 | 0.3125 | 0.2154 |
 
-### 2. Scope-mismatch estimator (proxy labels)
+### 2) Scope-mismatch estimator (proxy labels)
 
 | Metric | Value |
-|---|---|
+|---|---:|
 | AUROC / AUPRC | 0.9635 / 0.9184 |
 | F1 / Precision / Recall (threshold 0.26) | 0.8605 / 0.8129 / 0.9141 |
 | Accuracy | 0.9001 |
@@ -195,10 +245,10 @@ Performance by venue size (training papers per journal):
 | Mean mismatch: true / near / far venue | 0.048 / 0.063 / 0.565 |
 | Top-1 error detection AUROC | 0.5698 |
 
-### 3. Title–abstract consistency (synthetic negatives)
+### 3) Title–abstract consistency (synthetic negatives)
 
 | Metric | Value |
-|---|---|
+|---|---:|
 | AUROC / AUPRC | 0.9745 / 0.9743 |
 | EER | 0.0840 |
 | Brier / ECE | 0.0705 / 0.0495 |
@@ -212,31 +262,33 @@ Performance by venue size (training papers per journal):
 
 ## Limitations and honest notes
 
-- **Venue recommendation is hard.** Many journals overlap heavily in topic (for example *BioControl* and *Entomologia Experimentalis et Applicata*), so the true journal often appears in the top 5 but not at rank 1. Rare journals are much weaker than frequent ones (Hit@1 0.09 for tail venues).
-- **Overfitting after epoch 5.** Training venue loss kept falling while validation Hit@1/MRR plateaued; the best checkpoint is from epoch 5 and early stopping ended training at epoch 8.
-- **Proxy labels for two heads.** The dataset has no ground-truth labels for scope mismatch or consistency. Consistency positives are real title–abstract pairs; negatives pair a title with another paper's abstract (half random, half from similar-topic papers). Scope mismatch uses soft targets from venue distances between SPECTER-2 centroids of training data. Only the venue metrics use real labels.
-- **The scope estimator separates far-off venues, not near ones.** It ranks the true venue below far venues almost perfectly (0.99) but below near, related venues much less reliably (0.68), and its mismatch score barely distinguishes correct from wrong top-1 recommendations (AUROC 0.57). Treat "Scope-Mismatch Risk: LOW" as "topic is in the right area," not as a guarantee of fit.
-- **Scope distance** is a raw cosine-based distance in the learned space and varies little between papers; prefer the mismatch probability.
-- **Closed set.** Only journals present in the training data can be recommended.
-- **Dataset bias.** The data is dominated by entomology, biological control and ecology; the model will be weaker outside these areas.
-- **Not a guarantee.** Always check a journal's aims and scope before submitting.
+- Venue recommendation remains difficult. Many journals overlap heavily in topic, such as *BioControl* and *Entomologia Experimentalis et Applicata*, so the correct venue frequently appears in the top 5 but not always in the top 1.
+- Overfitting can begin after epoch 5. Validation performance plateaued while training loss continued to drop; the strongest checkpoint was selected from epoch 5.
+- For the two auxiliary heads, proxy labels are used because no direct ground-truth labels exist for scope mismatch or consistency. Positives are real title–abstract pairs; negatives are constructed by pairing titles with mismatched or similar abstracts.
+- The scope estimator is strongest at separating far-off venues from the true venue; it is less reliable for near-related venues.
+- Scope distance is a raw cosine-based distance in the learned representation space and varies little across papers. The mismatch probability is generally the more informative signal.
+- The system is a closed-set recommender: only journals seen in the training data can be recommended.
+- The dataset is biased toward entomology, biological control, and ecology; performance may be weaker outside these domains.
+- This is not a guarantee of fit or acceptance. Always verify a journal's aims and scope before submission.
 
 ---
 
 ## Project structure
 
-```
+```text
 SciFit-Net/
 ├── scifit_net.py      # data prep, model, training, evaluation, inference
 ├── app.py             # Streamlit app
 ├── requirements.txt
 ├── README.md
-└── scifit_out/        # trained model files (not committed; see below)
+└── scifit_out/       # trained model files (not committed; see below)
 ```
+
+---
 
 ## Model weights
 
-Weights are not stored in this repository because of their size. Download them from: `<Kaggle / Hugging Face / GitHub Release link>` and place the files in `scifit_out/`.
+Model weights are not included in this repository because of their size. Download them from a release, Kaggle asset, or Hugging Face location and place them in `scifit_out/` before running predictions or evaluation.
 
 ---
 
@@ -251,14 +303,27 @@ Weights are not stored in this repository because of their size. Download them f
 }
 ```
 
+---
+
 ## Acknowledgements
 
-SciBERT and SPECTER-2 (Allen Institute for AI), PyTorch, Hugging Face Transformers, Streamlit.
+SciBERT and SPECTER-2 (Allen Institute for AI), PyTorch, Hugging Face Transformers, and Streamlit.
+
+---
 
 ## License
 
 Add a license (for example MIT) before publishing.
 
+---
+
 ## Author
 
-Rakib, Department of CSE, IUBAT
+Rakib  
+Department of CSE, IUBAT
+
+---
+
+<p align="center">
+  <sub>Built for explainable, data-driven journal matching.</sub>
+</p>
